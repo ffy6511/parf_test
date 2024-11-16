@@ -21,6 +21,16 @@ const IterationTable = () => {
       )
     : { Char_Poi: [], Char_Ber: [], Char_BerVec: [] };
 
+  // 动态计算X轴范围
+  const getDynamicXRange = (allValues: { min: number; max: number; lambda: number }[]) => {
+    if (allValues.length === 0) return { min: 0, max: 10 }; // 防御性返回
+    const lambda = allValues[currentIteration]?.lambda ?? 1;
+    return {
+      min: 0,
+      max: Math.min(allValues[currentIteration].max, lambda * 2 + 10), // 主体分布集中在λ附近
+    };
+  };
+
   return iterationData.length > 0 ? (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Poisson Distribution */}
@@ -39,6 +49,15 @@ const IterationTable = () => {
                   }
                 )}
                 currentIteration={currentIteration}
+                xRange={getDynamicXRange(
+                  iterationData.map(
+                    (iteration) => iteration[paramKey].values as {
+                      min: number;
+                      max: number;
+                      lambda: number;
+                    }
+                  )
+                )}
               />
             </div>
           ))}

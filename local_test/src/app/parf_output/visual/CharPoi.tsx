@@ -19,9 +19,10 @@ ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, T
 interface CharPoiProps {
   allValues: { min: number; max: number; lambda: number }[];
   currentIteration: number;
+  xRange: { min: number; max: number }; // 动态 xRange
 }
 
-const CharPoi: React.FC<CharPoiProps> = ({ allValues, currentIteration }) => {
+const CharPoi: React.FC<CharPoiProps> = ({ allValues, currentIteration, xRange }) => {
   if (!allValues || allValues.length === 0) return <div>暂无数据</div>;
 
   const factorial = (n: number): number => {
@@ -38,12 +39,17 @@ const CharPoi: React.FC<CharPoiProps> = ({ allValues, currentIteration }) => {
     return {
       label: `Iteration ${index} (λ=${values.lambda})`,
       data: y,
-      borderColor: `rgba(75,192,192,${1 - (currentIteration - index) * 0.1})`, // 颜色逐渐变暗
+      borderColor: `rgba(75,192,192,${1 - (currentIteration - index) * 0.1})`,
       backgroundColor: `rgba(75,192,192,${0.2 - (currentIteration - index) * 0.02})`,
       borderWidth: index === currentIteration ? 2 : 1,
       fill: true,
     };
   });
+
+  const currentData = datasets[currentIteration].data as number[];
+
+  const yMax = Math.max(...currentData);
+  const yMin = Math.min(...currentData.filter((value) => value > 0));
 
   const data = {
     labels: x,
@@ -59,8 +65,41 @@ const CharPoi: React.FC<CharPoiProps> = ({ allValues, currentIteration }) => {
       <Line
         data={data}
         options={{
+          responsive: true,
+          maintainAspectRatio: false,
           scales: {
-            y: { min: 0, max: Math.max(...datasets.flatMap((d) => d.data)) * 1.1 },
+            x: {
+              type: "linear",
+              min: xRange.min,
+              max: xRange.max,
+              title: {
+                display: true,
+                text: "Values",
+              },
+            },
+            y: {
+              suggestedMin: yMin * 0.9,
+              suggestedMax: yMax * 1.1,
+              title: {
+                display: true,
+                text: "Probability",
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              display: true,
+              onClick: (e, legendItem, legend) => {
+                const index = legendItem.datasetIndex;
+                const ci = legend.chart;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = !meta.hidden;
+                ci.update();
+              },
+            },
+            tooltip: {
+              enabled: true,
+            },
           },
         }}
       />
